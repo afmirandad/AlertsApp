@@ -32,67 +32,132 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+  home: const MyHomePage(),
     );
   }
 }
 
 
 
+
 class MyHomePage extends StatefulWidget {
-  final String title;
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  const MyHomePage({Key? key}) : super(key: key);
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+
+class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
   final AudioPlayer _audioPlayer = AudioPlayer();
 
-  // Lista de sonidos de emergencia (debes agregar los archivos en assets/audio/)
   final List<Map<String, String>> emergencySounds = [
-    {'label': 'Alerta General', 'file': 'alerta_general.mp3'},
-    {'label': 'Emergencia Médica', 'file': 'emergencia_medica.mp3'},
-    {'label': 'Incendio', 'file': 'incendio.mp3'},
-    {'label': 'Caída', 'file': 'caida.mp3'},
+    {'label': 'Alerta General', 'file': 'alerte.mp3', 'color': '0xFFE53935'},
+    {'label': 'Emergencia Médica', 'file': 'emergencia_medica.mp3', 'color': '0xFF43A047'},
+    {'label': 'Incendio', 'file': 'incendio.mp3', 'color': '0xFFFFA000'},
+    {'label': 'Caída', 'file': 'caida.mp3', 'color': '0xFF1E88E5'},
   ];
 
-  void _playSound(String fileName) async {
+  int? _activeIndex;
+
+  void _playSound(String fileName, int index) async {
+    setState(() {
+      _activeIndex = index;
+    });
     await _audioPlayer.stop();
     await _audioPlayer.play(AssetSource('audio/$fileName'));
+    await Future.delayed(const Duration(milliseconds: 800));
+    setState(() {
+      _activeIndex = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text('Alertas Sonoras'),
+        backgroundColor: Colors.deepPurple,
+        title: const Text(
+          '¡Emergencia Fácil!',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 26,
+            color: Colors.white,
+            letterSpacing: 1.2,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 4,
       ),
-      body: Center(
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFF8BBD0), Color(0xFFB39DDB)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Presiona un botón de emergencia:',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              child: Text(
+                'Presiona el botón de la emergencia que necesitas:',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.black87),
+                textAlign: TextAlign.center,
+              ),
             ),
             const SizedBox(height: 32),
-            ...emergencySounds.map((sound) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(250, 60),
-                      textStyle: const TextStyle(fontSize: 20),
-                      backgroundColor: Colors.redAccent,
+            ...List.generate(emergencySounds.length, (i) {
+              final sound = emergencySounds[i];
+              final isActive = _activeIndex == i;
+              return AnimatedScale(
+                scale: isActive ? 1.1 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 24),
+                  child: GestureDetector(
+                    onTap: () => _playSound(sound['file']!, i),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      width: double.infinity,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Color(int.parse(sound['color']!)),
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                        border: isActive ? Border.all(color: Colors.black, width: 3) : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.campaign, color: Colors.white, size: 36),
+                          const SizedBox(width: 18),
+                          Text(
+                            sound['label']!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    icon: const Icon(Icons.warning, size: 32),
-                    label: Text(sound['label']!),
-                    onPressed: () => _playSound(sound['file']!),
                   ),
-                )),
+                ),
+              );
+            }),
           ],
         ),
       ),

@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 
 void main() {
   runApp(const MyApp());
@@ -41,35 +41,30 @@ class MyApp extends StatelessWidget {
 
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key}) : super(key: key);
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-
-class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateMixin {
-  final AudioPlayer _audioPlayer = AudioPlayer();
-
-  final List<Map<String, String>> emergencySounds = [
-    {'label': 'Alerta General', 'file': 'alerte.mp3', 'color': '0xFFE53935'},
-    {'label': 'Emergencia Médica', 'file': 'emergencia_medica.mp3', 'color': '0xFF43A047'},
-    {'label': 'Incendio', 'file': 'incendio.mp3', 'color': '0xFFFFA000'},
-    {'label': 'Caída', 'file': 'caida.mp3', 'color': '0xFF1E88E5'},
+class _MyHomePageState extends State<MyHomePage> {
+  // Lista de contactos configurables
+  final List<Map<String, dynamic>> emergencyContacts = [
+    {'label': 'Policía', 'phone': '911', 'color': 0xFFE53935},
+    {'label': 'Ambulancia', 'phone': '112', 'color': 0xFF43A047},
+    {'label': 'Bomberos', 'phone': '123', 'color': 0xFFFFA000},
+    {'label': 'Contacto Familiar', 'phone': '3125393422', 'color': 0xFF1E88E5},
   ];
 
-  int? _activeIndex;
-
-  void _playSound(String fileName, int index) async {
-    setState(() {
-      _activeIndex = index;
-    });
-    await _audioPlayer.stop();
-    await _audioPlayer.play(AssetSource('audio/$fileName'));
-    await Future.delayed(const Duration(milliseconds: 800));
-    setState(() {
-      _activeIndex = null;
-    });
+  Future<void> _callNumber(String number) async {
+    bool? res = await FlutterPhoneDirectCaller.callNumber(number);
+    if (res != true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo iniciar la llamada a $number')),
+        );
+      }
+    }
   }
 
   @override
@@ -110,51 +105,22 @@ class _MyHomePageState extends State<MyHomePage> with SingleTickerProviderStateM
               ),
             ),
             const SizedBox(height: 32),
-            ...List.generate(emergencySounds.length, (i) {
-              final sound = emergencySounds[i];
-              final isActive = _activeIndex == i;
-              return AnimatedScale(
-                scale: isActive ? 1.1 : 1.0,
-                duration: const Duration(milliseconds: 200),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 24),
-                  child: GestureDetector(
-                    onTap: () => _playSound(sound['file']!, i),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOut,
-                      width: double.infinity,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        color: Color(int.parse(sound['color']!)),
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                        border: isActive ? Border.all(color: Colors.black, width: 3) : null,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.campaign, color: Colors.white, size: 36),
-                          const SizedBox(width: 18),
-                          Text(
-                            sound['label']!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.1,
-                            ),
-                          ),
-                        ],
-                      ),
+            ...List.generate(emergencyContacts.length, (i) {
+              final contact = emergencyContacts[i];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 24),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(contact['color']),
+                    minimumSize: const Size.fromHeight(60),
+                    textStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
                     ),
                   ),
+                  icon: const Icon(Icons.phone, color: Colors.white, size: 32),
+                  label: Text(contact['label'], style: const TextStyle(color: Colors.white)),
+                  onPressed: () => _callNumber(contact['phone']),
                 ),
               );
             }),

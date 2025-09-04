@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_phone_direct_caller/flutter_phone_direct_caller.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,67 +32,98 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+  home: const MyHomePage(),
     );
   }
 }
 
 
 
+
 class MyHomePage extends StatefulWidget {
-  final String title;
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  const MyHomePage({super.key});
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final AudioPlayer _audioPlayer = AudioPlayer();
-
-  // Lista de sonidos de emergencia (debes agregar los archivos en assets/audio/)
-  final List<Map<String, String>> emergencySounds = [
-    {'label': 'Alerta General', 'file': 'alerta_general.mp3'},
-    {'label': 'Emergencia Médica', 'file': 'emergencia_medica.mp3'},
-    {'label': 'Incendio', 'file': 'incendio.mp3'},
-    {'label': 'Caída', 'file': 'caida.mp3'},
+  // Lista de contactos configurables
+  final List<Map<String, dynamic>> emergencyContacts = [
+    {'label': 'Policía', 'phone': '911', 'color': 0xFFE53935},
+    {'label': 'Ambulancia', 'phone': '112', 'color': 0xFF43A047},
+    {'label': 'Bomberos', 'phone': '123', 'color': 0xFFFFA000},
+    {'label': 'Contacto Familiar', 'phone': '3125393422', 'color': 0xFF1E88E5},
   ];
 
-  void _playSound(String fileName) async {
-    await _audioPlayer.stop();
-    await _audioPlayer.play(AssetSource('audio/$fileName'));
+  Future<void> _callNumber(String number) async {
+    bool? res = await FlutterPhoneDirectCaller.callNumber(number);
+    if (res != true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo iniciar la llamada a $number')),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        title: Text('Alertas Sonoras'),
+        backgroundColor: Colors.deepPurple,
+        title: const Text(
+          '¡Emergencia Fácil!',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 26,
+            color: Colors.white,
+            letterSpacing: 1.2,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 4,
       ),
-      body: Center(
+      body: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFF8BBD0), Color(0xFFB39DDB)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Presiona un botón de emergencia:',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              child: Text(
+                'Presiona el botón de la emergencia que necesitas:',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Colors.black87),
+                textAlign: TextAlign.center,
+              ),
             ),
             const SizedBox(height: 32),
-            ...emergencySounds.map((sound) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(250, 60),
-                      textStyle: const TextStyle(fontSize: 20),
-                      backgroundColor: Colors.redAccent,
+            ...List.generate(emergencyContacts.length, (i) {
+              final contact = emergencyContacts[i];
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 24),
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(contact['color']),
+                    minimumSize: const Size.fromHeight(60),
+                    textStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
                     ),
-                    icon: const Icon(Icons.warning, size: 32),
-                    label: Text(sound['label']!),
-                    onPressed: () => _playSound(sound['file']!),
                   ),
-                )),
+                  icon: const Icon(Icons.phone, color: Colors.white, size: 32),
+                  label: Text(contact['label'], style: const TextStyle(color: Colors.white)),
+                  onPressed: () => _callNumber(contact['phone']),
+                ),
+              );
+            }),
           ],
         ),
       ),
